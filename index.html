@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Website</title>
+  <link rel="manifest" href="manifest.json">
+  <title>Sample PWA</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -36,33 +37,48 @@
 </head>
 <body>
   <div class="container">
-    <h1>Welcome to My Website</h1>
+    <h1>Welcome to the Sample PWA</h1>
     <div class="prompt" id="installPrompt">
-      <p>Would you like to add this site to your home screen?</p>
+      <p>Would you like to add this app to your home screen?</p>
       <button id="addButton">Add to Home Screen</button>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const prompt = document.getElementById('installPrompt');
-      const addBtn = document.getElementById('addButton');
-
-      function showPrompt() {
-        prompt.style.display = 'block';
-      }
-
-      function hidePrompt() {
-        prompt.style.display = 'none';
-      }
-
-      addBtn.addEventListener('click', () => {
-        hidePrompt();
-        alert('To add this site to your home screen, open the browser menu and select "Add to Home Screen".');
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      }).catch((error) => {
+        console.error('Service Worker registration failed:', error);
       });
+    }
 
-      // Show the prompt after a delay (e.g., 5 seconds)
-      setTimeout(showPrompt, 5000);
+    let deferredPrompt;
+    const addBtn = document.getElementById('addButton');
+    const prompt = document.getElementById('installPrompt');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      prompt.style.display = 'block';
+    });
+
+    addBtn.addEventListener('click', () => {
+      prompt.style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the A2HS prompt');
+        } else {
+          console.log('User dismissed the A2HS prompt');
+        }
+        deferredPrompt = null;
+      });
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
     });
   </script>
 </body>
